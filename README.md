@@ -2,6 +2,8 @@
 
 Playbook for creating/managing a Docker Swarm cluster (requires Docker >= 1.12).
 
+Companion files to the following post: https://thisendout.com/2016/09/13/deploying-docker-swarm-with-ansible/
+
 ## Assumptions
 
 This playbook assumes a running Docker daemon on the hosts and that the following Ansible inventory groups have been populated: `manager` and `worker`.
