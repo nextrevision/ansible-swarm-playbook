@@ -1,0 +1,118 @@
+---
+# determine the status of each manager node and break them
+# into two groups:
+#   - swarm_manager_operational (swarm is running and active)
+#   - swarm_manager_bootstrap (host needs to be joined to the cluster)
+- hosts: manager
+  become: true
+  tasks:
+    - name: load docker info as facts
+      docker_info_facts:
+
+    - name: create swarm_manager_operational group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_manager_operational
+      with_items: "{{ play_hosts }}"
+      when: "'{{ hostvars[item]['docker_info']['Swarm']['LocalNodeState'] }}' == 'active'"
+      run_once: true
+
+    - name: create swarm_manager_bootstrap group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_manager_bootstrap
+      with_items: "{{ play_hosts }}"
+      when: "'{{ hostvars[item]['docker_info']['Swarm']['LocalNodeState'] }}' != 'active'"
+      run_once: true
+
+# determine the status of each worker node and break them
+# into two groups:
+#   - swarm_worker_operational (host is joined to the swarm cluster)
+#   - swarm_worker_bootstrap (host needs to be joined to the cluster)
+- hosts: worker
+  become: true
+  tasks:
+    - name: load docker info as facts
+      docker_info_facts:
+
+    - name: create swarm_worker_operational group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_worker_operational
+      with_items: "{{ play_hosts }}"
+      when: "'{{ hostvars[item]['docker_info']['Swarm']['LocalNodeState'] }}' == 'active'"
+      run_once: true
+
+    - name: create swarm_worker_bootstrap group
+      add_host:
+        hostname: "{{ item }}"
+        groups: swarm_worker_bootstrap
+      with_items: "{{ play_hosts }}"
+      when: "'{{ hostvars[item]['docker_info']['Swarm']['LocalNodeState'] }}' != 'active'"
+      run_once: true
+
+# when the swarm_manager_operational group is empty, meaning there
+# are no hosts running swarm, we need to initialize one of the hosts
+# then add it to the swarm_manager_operational group
+- hosts: swarm_manager_bootstrap[0]
+  become: true
+  tasks:
+    - name: initialize swarm cluster
+      shell: >
+        docker swarm init
+        --advertise-addr={{ swarm_iface | default('eth0') }}:2377
+      when: "'swarm_manager_operational' not in groups"
+      register: bootstrap_first_node
+
+    - name: add initialized host to swarm_manager_operational group
+      add_host:
+        hostname: "{{ play_hosts[0] }}"
+        groups: swarm_manager_operational
+      when: bootstrap_first_node | changed
+
+# retrieve the swarm tokens and populate a list of ips listening on
+# the swarm port 2377
+- hosts: swarm_manager_operational[0]
+  become: true
+  vars:
+    iface: "{{ swarm_iface | default('eth0') }}"
+  tasks:
+    - name: retrieve swarm manager token
+      shell: docker swarm join-token -q manager
+      register: swarm_manager_token
+
+    - name: retrieve swarm worker token
+      shell: docker swarm join-token -q worker
+      register: swarm_worker_token
+
+    - name: populate list of manager ips
+      add_host:
+        hostname: "{{ hostvars[item]['ansible_' + iface]['ipv4']['address'] }}"
+        groups: swarm_manager_ips
+      with_items: "{{ play_hosts }}"
+
+# join the hosts not yet initialized to the swarm cluster
+- hosts: swarm_manager_bootstrap:!swarm_manager_operational
+  become: true
+  vars:
+    token: "{{ hostvars[groups['swarm_manager_operational'][0]]['swarm_manager_token']['stdout'] }}"
+  tasks:
+    - name: join manager nodes to cluster
+      shell: >
+        docker swarm join
+        --advertise-addr={{ swarm_iface | default('eth0') }}:2377
+        --token={{ token }}
+        {{ groups['swarm_manager_ips'][0] }}:2377
+
+# join the remaining workers to the swarm cluster
+- hosts: swarm_worker_bootstrap
+  become: true
+  vars:
+    token: "{{ hostvars[groups['swarm_manager_operational'][0]]['swarm_worker_token']['stdout'] }}"
+  tasks:
+    - name: join worker nodes to cluster
+      shell: >
+        docker swarm join
+        --advertise-addr={{ swarm_iface | default('eth0') }}:2377
+        --token={{ token }}
+        {{ groups['swarm_manager_ips'][0] }}:2377
