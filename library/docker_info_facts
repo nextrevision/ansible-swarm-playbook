@@ -57,7 +57,7 @@ def main():
     info, err = _get_docker_info()
 
     if err:
-        module.fail_json(msg=e.message)
+        module.fail_json(msg=err.message)
 
     module.exit_json(
         changed=True,
