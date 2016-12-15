@@ -34,14 +34,13 @@ Vagrant.configure(2) do |config|
           node.vm.provision "ansible" do |ansible|
             ansible.playbook = "swarm.yml"
             #ansible.playbook = "swarm-facts.yml"
-            ansible.verbose = true
             ansible.limit = "all"
             ansible.extra_vars = {
               swarm_iface: "eth1"
             }
             ansible.groups = {
               "manager" => ["manager-[1:3]"],
-              "worker"  => ["worker-[4:6]"],
+              "worker"  => ["worker-4:6]"],
             }
             ansible.raw_arguments = [
               "-M ./library"
