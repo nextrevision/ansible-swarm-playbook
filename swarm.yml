@@ -15,7 +15,7 @@
       add_host:
         hostname: "{{ item }}"
         groups: swarm_manager_operational
-      with_items: "{{ play_hosts }}"
+      with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
       when: "'active' in hostvars[item].swarm_status.stdout_lines"
       run_once: true
 
@@ -23,7 +23,7 @@
       add_host:
         hostname: "{{ item }}"
         groups: swarm_manager_bootstrap
-      with_items: "{{ play_hosts }}"
+      with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
       when: "'active' not in hostvars[item].swarm_status.stdout_lines"
       run_once: true
 
@@ -43,7 +43,7 @@
       add_host:
         hostname: "{{ item }}"
         groups: swarm_worker_operational
-      with_items: "{{ play_hosts }}"
+      with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
       when: "'active' in hostvars[item].swarm_status.stdout_lines"
       run_once: true
 
@@ -51,7 +51,7 @@
       add_host:
         hostname: "{{ item }}"
         groups: swarm_worker_bootstrap
-      with_items: "{{ play_hosts }}"
+      with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
       when: "'active' not in hostvars[item].swarm_status.stdout_lines"
       run_once: true
 
@@ -70,7 +70,7 @@
 
     - name: add initialized host to swarm_manager_operational group
       add_host:
-        hostname: "{{ play_hosts[0] }}"
+        hostname: "{{ ansible_play_hosts | default(play_hosts)[0] }}"
         groups: swarm_manager_operational
       when: bootstrap_first_node | changed
 
@@ -93,7 +93,7 @@
       add_host:
         hostname: "{{ hostvars[item]['ansible_' + iface]['ipv4']['address'] }}"
         groups: swarm_manager_ips
-      with_items: "{{ play_hosts }}"
+      with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
 
 # join the manager hosts not yet initialized to the swarm cluster
 - hosts: swarm_manager_bootstrap:!swarm_manager_operational
