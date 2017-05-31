@@ -40,7 +40,7 @@ Vagrant.configure(2) do |config|
             }
             ansible.groups = {
               "manager" => ["manager-[1:3]"],
-              "worker"  => ["worker-4:6]"],
+              "worker"  => ["worker-[4:6]"],
             }
             ansible.raw_arguments = [
               "-M ./library"
