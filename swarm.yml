@@ -8,7 +8,7 @@
   tasks:
     - name: determine swarm status
       shell: >
-        docker info | egrep '^Swarm: ' | cut -d ' ' -f2
+        docker info --format \{\{.Swarm.LocalNodeState\}\}
       register: swarm_status
 
     - name: create swarm_manager_operational group
@@ -36,7 +36,7 @@
   tasks:
     - name: determine swarm status
       shell: >
-        docker info | egrep '^Swarm: ' | cut -d ' ' -f2
+        docker info --format \{\{.Swarm.LocalNodeState\}\}
       register: swarm_status
 
     - name: create swarm_worker_operational group
