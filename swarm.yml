@@ -92,7 +92,7 @@
 
     - name: populate list of manager ips
       add_host:
-        hostname: "{{ hostvars[item]['ansible_' + iface]['ipv4']['address'] }}"
+        hostname: "{{ hostvars[item]['ansible_default_ipv4]['ipv4']['address'] }}"
         groups: swarm_manager_ips
       with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
 
