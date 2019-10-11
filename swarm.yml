@@ -62,7 +62,7 @@
   become: true
   tasks:
     - name: initialize swarm cluster
-      shell: >
+      shell: >-
         docker swarm init
         --advertise-addr={{ swarm_iface | default('eth0') }}:2377
       when: "'swarm_manager_operational' not in groups"
@@ -103,7 +103,7 @@
     token: "{{ hostvars[groups['swarm_manager_operational'][0]]['swarm_manager_token']['stdout'] }}"
   tasks:
     - name: join manager nodes to cluster
-      shell: >
+      shell: >-
         docker swarm join
         --advertise-addr={{ swarm_iface | default('eth0') }}:2377
         --token={{ token }}
@@ -116,7 +116,7 @@
     token: "{{ hostvars[groups['swarm_manager_operational'][0]]['swarm_worker_token']['stdout'] }}"
   tasks:
     - name: join worker nodes to cluster
-      shell: >
+      shell: >-
         docker swarm join
         --advertise-addr={{ swarm_iface | default('eth0') }}:2377
         --token={{ token }}
