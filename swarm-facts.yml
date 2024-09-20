@@ -69,7 +69,7 @@
         hostname: "{{ item }}"
         groups: swarm_manager_operational
       with_items: "{{ ansible_play_hosts | default(play_hosts) }}"
-      when: bootstrap_first_node | changed
+      when: bootstrap_first_node.changed
 
 # retrieve the swarm tokens and populate a list of ips listening on
 # the swarm port 2377
